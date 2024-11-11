@@ -407,7 +407,7 @@ namespace dip
                 // Case 1
                 if (g != 0.0 || h != 0.0)
                 {
-                    invMatrix[0][0] = a - h * u;    invMatrix[0][1] = b - h * u;    invMatrix[0][2] = c;
+                    invMatrix[0][0] = a - g * u;    invMatrix[0][1] = b - h * u;    invMatrix[0][2] = c;
                     invMatrix[1][0] = d - g * v;    invMatrix[1][1] = e - h * v;    invMatrix[1][2] = f;
                     invMatrix[2][0] = 0.0;          invMatrix[2][1] = 0.0;          invMatrix[2][2] = 1.0;
                     invMatrix = inverseMatrix(invMatrix);
@@ -429,6 +429,94 @@ namespace dip
                 int y = (int)std::round((dd * uu + ee * vv + ff) / (gg * uu + hh * vv + 1));
 
                 pixelMove(imgIn, imageOut, Coordinate<int>(x, y), Coordinate<int>(u, v));
+            }
+
+        imgOut.setImg(imageOut);
+    }
+
+    void PerspectiveTransformationFull(const Image& imgIn, Image& imgOut, Coordinate<int> xy[4], Coordinate<int> uv[4])
+    {
+        // Case 1
+        double a, b, c, d, e, f, g, h;
+        parameterPerspective(a, b, c, d, e, f, g, h, uv);
+        std::vector<std::vector<double>> invMatrixCase1(3, std::vector<double>(3));
+        invMatrixCase1[0][0] = a;    invMatrixCase1[0][1] = b;    invMatrixCase1[0][2] = c;
+        invMatrixCase1[1][0] = d;    invMatrixCase1[1][1] = e;    invMatrixCase1[1][2] = f;
+        invMatrixCase1[2][0] = g;    invMatrixCase1[2][1] = h;    invMatrixCase1[2][2] = 1.0;
+        invMatrixCase1 = inverseMatrix(invMatrixCase1);
+
+        // Case 2
+        double aa, bb, cc, dd, ee, ff, gg, hh;
+        parameterPerspective(aa, bb, cc, dd, ee, ff, gg, hh, xy);
+        std::vector<std::vector<double>> invMatrixCase2(3, std::vector<double>(3));
+        invMatrixCase2[0][0] = aa;    invMatrixCase2[0][1] = bb;    invMatrixCase2[0][2] = cc;
+        invMatrixCase2[1][0] = dd;    invMatrixCase2[1][1] = ee;    invMatrixCase2[1][2] = ff;
+        invMatrixCase2[2][0] = gg;    invMatrixCase2[2][1] = hh;    invMatrixCase2[2][2] = 1.0;
+        invMatrixCase2 = inverseMatrix(invMatrixCase2);
+
+        int minX = 0, minY = 0, maxX = 0, maxY = 0;
+        for (int x = 0; x < imgIn.size.rows; x++)
+            for (int y = 0; y < imgIn.size.columns; y++)
+            {
+                // Case 2
+                if (gg != 0.0 || hh != 0.0)
+                {
+                    invMatrixCase2[0][0] = aa - gg * x;    invMatrixCase2[0][1] = bb - hh * x;    invMatrixCase2[0][2] = cc;
+                    invMatrixCase2[1][0] = dd - gg * y;    invMatrixCase2[1][1] = ee - hh * y;    invMatrixCase2[1][2] = ff;
+                    invMatrixCase2[2][0] = 0.0;            invMatrixCase2[2][1] = 0.0;            invMatrixCase2[2][2] = 1.0;
+                    invMatrixCase2 = inverseMatrix(invMatrixCase2);
+                }
+
+                std::vector<std::vector<double>> xyMatrix(3, std::vector<double>(1));
+                xyMatrix[0][0] = x;
+                xyMatrix[1][0] = y;
+                xyMatrix[2][0] = 1.0;
+
+                std::vector<std::vector<double>> uuvvMatrix = multipleMatrix(invMatrixCase2, xyMatrix);
+                double uu = uuvvMatrix[0][0];
+                double vv = uuvvMatrix[1][0];
+
+                // Case 1
+                int u = (int)std::round((a * uu + b * vv + c) / (g * uu + h * vv + 1));
+                int v = (int)std::round((d * uu + e * vv + f) / (g * uu + h * vv + 1));
+
+                minX = std::min(minX, u);
+                minY = std::min(minY, v);
+                maxX = std::max(maxX, u);
+                maxY = std::max(maxY, v);
+            }
+
+        int newRows = maxX - minX + 1;
+        int newCols = maxY - minY + 1;
+        Image imageOut(Size(newRows, newCols), 0);
+        for (int u = minX; u < maxX + 1; u++)
+            for (int v = minY; v < maxY + 1; v++)
+            {
+                // Case 1
+                if (g != 0.0 || h != 0.0)
+                {
+                    invMatrixCase1[0][0] = a - g * u;    invMatrixCase1[0][1] = b - h * u;    invMatrixCase1[0][2] = c;
+                    invMatrixCase1[1][0] = d - g * v;    invMatrixCase1[1][1] = e - h * v;    invMatrixCase1[1][2] = f;
+                    invMatrixCase1[2][0] = 0.0;          invMatrixCase1[2][1] = 0.0;          invMatrixCase1[2][2] = 1.0;
+                    invMatrixCase1 = inverseMatrix(invMatrixCase1);
+                }
+
+                std::vector<std::vector<double>> uvMatrix(3, std::vector<double>(1));
+                uvMatrix[0][0] = u;
+                uvMatrix[1][0] = v;
+                uvMatrix[2][0] = 1.0;
+
+                std::vector<std::vector<double>> uuvvMatrix = multipleMatrix(invMatrixCase1, uvMatrix);
+                double uu = uuvvMatrix[0][0];
+                double vv = uuvvMatrix[1][0];
+
+                // Case 2
+                int x = (int)std::round((aa * uu + bb * vv + cc) / (gg * uu + hh * vv + 1));
+                int y = (int)std::round((dd * uu + ee * vv + ff) / (gg * uu + hh * vv + 1));
+                if (x < 0 || x >= imgIn.size.rows || y < 0 || y >= imgIn.size.columns)
+                    continue;
+
+                pixelMove(imgIn, imageOut, Coordinate<int>(x, y), Coordinate<int>(u - minX, v - minY));
             }
 
         imgOut.setImg(imageOut);

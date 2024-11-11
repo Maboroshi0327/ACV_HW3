@@ -94,6 +94,7 @@ namespace dip
           (x, y)                       uu                                  (u, v)       *
     */
     void PerspectiveTransformation(const Image& imgIn, Image& imgOut, Coordinate<int> xy[4], Coordinate<int> uv[4]);
+    void PerspectiveTransformationFull(const Image& imgIn, Image& imgOut, Coordinate<int> xy[4], Coordinate<int> uv[4]);
     void parameterPerspective(double& a, double& b, double& c, double& d, double& e, double& f, double& g, double& h, Coordinate<int> xy[4]);
 
     template<typename T1, typename T2>
