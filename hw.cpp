@@ -149,3 +149,54 @@ void HW3_2_back(dip::Image& back)
 
     dip::PerspectiveTransformation(back, back, xy, uv);
 }
+
+void HW3_1_NEW()
+{
+    dip::Image ImgIn;
+    ImgIn.openBMP("360degree.bmp");
+
+    int Xc = ImgIn.size.columns / 2;
+    int Yc = ImgIn.size.rows / 2;
+    int Xout = 1024, Yout = 512;
+
+    dip::Image ImgOut(dip::Size(Yout, Xout));
+    for (int r = 0; r < Yout; r++)
+    {
+        for (int th = 0; th < Xout; th++)
+        {
+            int x = static_cast<int>(r * std::cos(th * 2 * M_PI / Xout) + Xc);
+            int y = static_cast<int>(r * std::sin(th * 2 * M_PI / Xout) + Yc);
+
+            x = std::min(std::max(x, 0), static_cast<int>(ImgIn.size.rows - 1));
+            y = std::min(std::max(y, 0), static_cast<int>(ImgIn.size.columns - 1));
+
+            ImgOut.img_0[Yout - r - 1][th] = ImgIn.img_0[x][y];
+            ImgOut.img_1[Yout - r - 1][th] = ImgIn.img_1[x][y];
+            ImgOut.img_2[Yout - r - 1][th] = ImgIn.img_2[x][y];
+        }
+    }
+
+    ImgOut.saveBMP("HW3-1_NEW.bmp", true);
+}
+
+void HW3_2_NEW()
+{
+    dip::Image plate;
+    plate.openBMP("poster.bmp");
+
+    dip::Coordinate<int> xy[4], uv[4];
+
+    xy[0].setCoord(13, 234);
+    xy[1].setCoord(488, 234);
+    xy[2].setCoord(410, 453);
+    xy[3].setCoord(56, 453);
+
+    uv[0].setCoord(0, 0);
+    uv[1].setCoord(480, 0);
+    uv[2].setCoord(480, 300);
+    uv[3].setCoord(0, 300);
+
+    dip::PerspectiveTransformationFull(plate, plate, xy, uv);
+
+    plate.saveBMP("HW3-2_NEW.bmp", true);
+}

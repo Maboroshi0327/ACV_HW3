@@ -21,6 +21,8 @@ int main()
             << "1: HW3-1\n"
             << "2: HW3-2\n"
             << "3: HW3-Bonus\n"
+            << "4: HW3-1_NEW\n"
+            << "5: HW3-2_NEW\n"
             << "q: quit\n"
             << "Enter the question number to select output result: ";
         std::cin >> cmd_input;
@@ -37,6 +39,14 @@ int main()
 
         case '3':
             HW3_Bonus();
+            break;
+
+        case '4':
+            HW3_1_NEW();
+            break;
+
+        case '5':
+            HW3_2_NEW();
             break;
 
         default:
